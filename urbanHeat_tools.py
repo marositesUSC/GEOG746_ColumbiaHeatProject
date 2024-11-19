@@ -5,6 +5,19 @@ import shutil
 ## Download Raster Data
 ## Download CAPA Transect Data from https://osf.io/nqwyr/?view_only=
 
+def create_file_structure(project_directory = os.getcwd()):
+    '''
+    Creates filestructure for data analysis
+    '''
+    folders = ['sentinel_rasters', 'CAPA_transects', 'CAPA_rasters', 'focal_rasters', 'resampled_rasters', 'shapefiles', 'fishnet']
+    for folder in folders:
+        if not os.path.exists(os.path.join(project_directory, folder)):
+            os.makedirs(os.path.join(project_directory, folder))
+            print(f'Created new directory: {folder}')
+        else:
+            print(f'{folder} already exists.')
+        
+
 def rename_rasters(input_folder):
     """
     Renames all Sentinel data so that it is easier to read.
@@ -179,9 +192,9 @@ def extract_values(in_points_file, rasters_folder, output_folder, output_file):
         # Define Raster name and new field for point shapefile
         name = raster.split('.')[0]
         nameparts = name.split('_')
-        new_fieldname = nameparts[0] + nameparts[1] + '_' + nameparts[-1]
+        new_fieldname = nameparts[-1] + '_' + nameparts[1] + '0m' #nameparts[0] + nameparts[1] + '_' + nameparts[-1]
         inRasterList.append([raster, new_fieldname])
-        
+    print(inRasterList)    
     arcpy.sa.ExtractMultiValuesToPoints(output, inRasterList, "NONE")           
     print(f"Processed {len(inRasterList)} rasters. And saved to {output}") 
     
@@ -209,23 +222,29 @@ def grid_to_points(input_raster):
     """
     pass
 
-# PROCESS RASTERS
-input_folder = r"C:\Users\bm233557\Downloads\Browser_images (2)"
-output_folder = r"C:\Users\bm233557\Downloads\TEST"
-resample_folder = os.path.join(output_folder, "Resample")
-focal_stats_folder = os.path.join(output_folder, "Focal")
+# CREATE PROJECT
+project_dir = r'C:\Users\bm233557\Documents\GradSchool\Climate\Project'
+#create_file_structure(project_dir)
 
+# DEFINE FILE DIRECTORIES
+raw_raster_folder = os.path.join(project_dir, 'sentinel_rasters') # r"C:\Users\bm233557\Downloads\Browser_images (2)"
+#output_folder = # r"C:\Users\bm233557\Downloads\TEST"
+resample_folder = os.path.join(project_dir, "resampled_rasters")
+focal_stats_folder = os.path.join(project_dir, "focal_rasters")
+transverse_folder = os.path.join(project_dir, 'CAPA_transects') #r"C:\Users\bm233557\Downloads\traverses_chw_columbia_092222 (1)"
+CAPA_raster_folder = os.path.join(project_dir, 'CAPA_rasters') #r'C:\Users\bm233557\Downloads\rasters_chw_columbia_101722'
+
+
+# PROCESS RASTERS
+#rename_rasters(raw_raster_folder)
+#apply_resampling(raw_raster_folder, resample_folder, "10 10")
 # Measured in Cells we use 10m cells, so multiply by 10. Literature uses 0 m, 100 m, 150 m, 200 m, 250 m, 300 m, 350 m, 400 m, 450  m,  500  m,  600  m,  700  m,  800  m,  900  m,  and  1000  m
 radius = [10,15,20,25,30,35,40,45,50,60,70,80,90,100] 
-
-## rename_rasters(input_folder)
-## apply_resampling(input_folder, resample_folder, "10 10")
-## apply_focal_statistics(resample_folder, focal_stats_folder, radius)
+#apply_focal_statistics(resample_folder, focal_stats_folder, radius)
 
 utm_spatial_ref = arcpy.SpatialReference(32617)
 
 # Define location of CAPA transverse data
-transverse_folder = r"C:\Users\bm233557\Downloads\traverses_chw_columbia_092222 (1)"
 
 am_shp = os.path.join(transverse_folder, 'am_trav.shp')
 af_shp = os.path.join(transverse_folder, 'af_trav.shp')
@@ -234,8 +253,6 @@ pm_shp = os.path.join(transverse_folder, 'pm_trav.shp')
 trans_data = [am_shp, af_shp, pm_shp]
 
 # Define location of CAPA Rasters   
-CAPA_raster_folder = r'C:\Users\bm233557\Downloads\rasters_chw_columbia_101722'
-
 capa_am_t_raster = os.path.join(CAPA_raster_folder, 'am_t_f.tif')
 capa_am_hi_raster = os.path.join(CAPA_raster_folder, 'am_hi_f.tif')
 capa_af_t_raster = os.path.join(CAPA_raster_folder, 'af_t_f.tif')
@@ -243,16 +260,20 @@ capa_af_hi_raster = os.path.join(CAPA_raster_folder, 'af_hi_f.tif')
 capa_pm_t_raster = os.path.join(CAPA_raster_folder, 'pm_t_f.tif')
 capa_pm_hi_raster = os.path.join(CAPA_raster_folder, 'pm_hi_f.tif')
 
-# Create fishnet *** THIS TAKES A LONG TIME TO RUN ***
+# CREATE FISHNET *** THIS TAKES A LONG TIME TO RUN ***
 # fishnet_folder = os.path.join(output_folder, "Fishnet")
 # create_fishnet(capa_am_t_raster, fishnet_folder, 'Fishnet')
-      
-# PROCESSING TRANSECT POINTS
 
-# EXTRACT RASTER VALUE FOR POINT
-processed_transects_folder = r'C:\Users\bm233557\Downloads\TEST\Points'
+
+# # EXTRACT RASTER VALUE FOR POINT
+processed_transects_folder = os.path.join(project_dir, 'shapefiles') #r'C:\Users\bm233557\Downloads\TEST\Points'
 am_shp_w_rasterdata = r'am_output.shp'
+af_shp_w_rasterdata = r'af_output.shp'
+pm_shp_w_rasterdata = r'pm_output.shp'
+
 extract_values(am_shp, focal_stats_folder, processed_transects_folder, am_shp_w_rasterdata)
-    
+extract_values(af_shp, focal_stats_folder, processed_transects_folder, af_shp_w_rasterdata)
+extract_values(pm_shp, focal_stats_folder, processed_transects_folder, pm_shp_w_rasterdata)
+
 
 
